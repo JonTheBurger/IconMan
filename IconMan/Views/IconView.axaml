@@ -1,0 +1,37 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:IconMan.ViewModels"
+             mc:Ignorable="d"
+             x:Class="IconMan.Views.IconView"
+             x:DataType="vm:IconViewModel"
+             >
+    <UserControl.Styles>
+        <Style Selector="ToggleButton.favorite:checked /template/ ContentPresenter">
+            <Setter Property="Background" Value="Orange"/>
+        </Style>
+        <Style Selector="ToggleButton PathIcon.favorited">
+            <Setter Property="IsVisible" Value="False"/>
+        </Style>
+        <Style Selector="ToggleButton:checked PathIcon.favorited">
+            <Setter Property="IsVisible" Value="True"/>
+        </Style>
+        <Style Selector="ToggleButton PathIcon.not-favorited">
+            <Setter Property="IsVisible" Value="True"/>
+        </Style>
+        <Style Selector="ToggleButton:checked PathIcon.not-favorited">
+            <Setter Property="IsVisible" Value="False"/>
+        </Style>
+    </UserControl.Styles>
+
+    <Grid RowDefinitions="*,*,*" ColumnDefinitions="*,*,*" Width="64" Height="64">
+        <Image Source="{Binding Image}" Grid.RowSpan="3" Grid.ColumnSpan="3" Width="32" Height="32" Stretch="Uniform"/>
+        <ToggleButton IsChecked="{Binding IsFavorite}" IsVisible="{Binding Image, Converter={x:Static ObjectConverters.IsNotNull}}" Grid.Row="3" Grid.Column="3" Classes="favorite" CornerRadius="32">
+            <Panel>
+                <PathIcon Classes="favorited" Data="{StaticResource star_regular}" />
+                <PathIcon Classes="not-favorited" Data="{StaticResource star_off_regular}" />
+            </Panel>
+        </ToggleButton>
+    </Grid>
+</UserControl>
