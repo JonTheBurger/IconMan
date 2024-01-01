@@ -7,6 +7,7 @@
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
         x:Class="IconMan.Views.MainWindow"
         Icon="/Assets/avalonia-logo.ico"
-        Title="IconMan">
-        <views:MainView />
+        Title="IconMan"
+        >
+        <views:MainView/>
 </Window>

@@ -1,6 +1,10 @@
-﻿using IconMan.Services;
+﻿using CommunityToolkit.Mvvm.Input;
+using IconMan.Services;
 using System;
 using System.Collections.ObjectModel;
+using System.Linq.Expressions;
+using System.Threading.Tasks;
+using System.Windows.Input;
 
 namespace IconMan.ViewModels;
 
@@ -13,9 +17,10 @@ public partial class MainViewModel : ViewModelBase
     public MainViewModel(IIconService iconService)
     {
         _iconService = iconService;
+        LoadButtonCommand = new AsyncRelayCommand(LoadButtonClicked);
     }
 
-    public string ButtonText => _iconService.GetIconCount(@"C:\Windows\System32\shell32.dll").ToString();
+    public string ButtonText => "Load Icons";
 
     public ObservableCollection<IconViewModel> Icons { get; } = new();
 
@@ -35,7 +40,9 @@ public partial class MainViewModel : ViewModelBase
     ];
 #pragma warning restore S1075 // URIs should not be hardcoded
 
-    public async void LoadButtonClicked()
+    public IAsyncRelayCommand LoadButtonCommand { get; init; }
+
+    public async Task LoadButtonClicked()
     {
         await foreach (var icon in _iconService.GetIconsAsync(DefaultIconFiles))
         {

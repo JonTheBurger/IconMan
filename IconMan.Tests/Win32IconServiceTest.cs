@@ -1,6 +1,6 @@
-namespace IconMan.Tests;
+﻿namespace IconMan.Tests;
 
-public class UnitTest1
+public class Win32IconServiceTest
 {
     [Fact]
     public void ExampleTest()

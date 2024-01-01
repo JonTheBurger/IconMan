@@ -61,9 +61,11 @@ public class Win32IconService : IIconService
         }
     }
 
+    // https://learn.microsoft.com/en-us/windows/win32/api/shellapi/nf-shellapi-extracticonexw
     [DllImport("shell32.dll", EntryPoint = "ExtractIconExW", CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true, CallingConvention = CallingConvention.StdCall)]
     private static extern int ExtractIconExW(string lpszFile, int nIconIndex, out IntPtr phiconLarge, out IntPtr phiconsmall, int nIcons);
 
+    // https://learn.microsoft.com/en-us/windows/win32/api/shellapi/nf-shellapi-extracticonexw
     [DllImport("shell32.dll", EntryPoint = "ExtractIconExW", CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true, CallingConvention = CallingConvention.StdCall)]
     private static extern int ExtractIconExW(string lpszFile, int nIconIndex, IntPtr phiconLarge, IntPtr phiconsmall, int nIcons);
 
@@ -75,9 +77,7 @@ public static class Win32IconExtensions
 {
     public static AvaloniaBitmap ToAvaloniaBitmap(this Icon self)
     {
-        var bitmap = self.ToBitmap().ToAvalonia();
-        //self.Dispose();
-        return bitmap;
+        return self.ToBitmap().ToAvalonia();
     }
 
     public static AvaloniaBitmap ToAvalonia(this WindowsBitmap b)

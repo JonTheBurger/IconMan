@@ -20,7 +20,7 @@ public partial class App : Application
 
     private IServiceProvider? Control;
 
-    public static T GetService<T>() => ((App)Current).Control.GetRequiredService<T>();
+    public static T GetService<T>() where T : notnull => (Current! as App)!.Control!.GetRequiredService<T>();
 
     public override void OnFrameworkInitializationCompleted()
     {
@@ -28,7 +28,7 @@ public partial class App : Application
         Control = new ServiceCollection()
             .AddSingleton(LoggerFactory.Create(builder => builder.AddDebug()))
             .AddSingleton<IIconService, Win32IconService>()
-            .AddSingleton<IIniService, Win32IniService>()
+            .AddSingleton<IDirectoryIconService, Win32DirectoryIconService>()
             .BuildServiceProvider();
 
         // Line below is needed to remove Avalonia data validation.
