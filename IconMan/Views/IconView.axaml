@@ -26,7 +26,7 @@
     </UserControl.Styles>
 
     <Grid RowDefinitions="*,*,*" ColumnDefinitions="*,*,*" Width="64" Height="64">
-        <Image Source="{Binding Image}" Grid.RowSpan="3" Grid.ColumnSpan="3" Width="32" Height="32" Stretch="Uniform"/>
+        <Image Source="{Binding Image}" Grid.RowSpan="3" Grid.ColumnSpan="3" Width="32" Height="32" Stretch="Uniform" ToolTip.Tip="{Binding Path}"/>
         <ToggleButton IsChecked="{Binding IsFavorite}" IsVisible="{Binding Image, Converter={x:Static ObjectConverters.IsNotNull}}" Grid.Row="3" Grid.Column="3" Classes="favorite" CornerRadius="32">
             <Panel>
                 <PathIcon Classes="favorited" Data="{StaticResource star_regular}" />

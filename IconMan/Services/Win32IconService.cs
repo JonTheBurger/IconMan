@@ -44,6 +44,23 @@ public class Win32IconService : IIconService
         return Icon.FromHandle(large != 0 ? large : small);
     }
 
+    public async IAsyncEnumerable<AvaloniaBitmap> GetBitmapsAsync(string file, [EnumeratorCancellation] CancellationToken token = default)
+    {
+        await _semaphore.WaitAsync();
+        try
+        {
+            int count = await Task.Run(() => GetIconCount(file));
+            for (int i = 0; ((i < count) && (!token.IsCancellationRequested)); i++)
+            {
+                yield return await Task.Run(() => GetIcon(file, i).ToAvaloniaBitmap());
+            }
+        }
+        finally
+        {
+            _semaphore.Release();
+        }
+    }
+
     public async IAsyncEnumerable<Icon> GetIconsAsync(string file, [EnumeratorCancellation] CancellationToken token = default)
     {
         await _semaphore.WaitAsync();

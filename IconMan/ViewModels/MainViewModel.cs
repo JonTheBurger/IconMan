@@ -1,62 +1,85 @@
-﻿using CommunityToolkit.Mvvm.Input;
+﻿using Avalonia.Interactivity;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using IconMan.Services;
+using IconMan.Util;
 using System;
 using System.Collections.ObjectModel;
-using System.Linq.Expressions;
 using System.Threading.Tasks;
-using System.Windows.Input;
 
 namespace IconMan.ViewModels;
 
 public partial class MainViewModel : ViewModelBase
 {
-    public MainViewModel() : this(App.GetService<IIconService>())
+    public MainViewModel() : this(App.GetService<IIconService>(), App.GetService<ISettingsService>())
     {
     }
 
-    public MainViewModel(IIconService iconService)
+    public MainViewModel(IIconService iconService, ISettingsService settingsService)
     {
         _iconService = iconService;
-        LoadButtonCommand = new AsyncRelayCommand(LoadButtonClicked);
+        _settingsService = settingsService;
+
+        RecentDirectories = new(_settingsService.Settings.RecentDirectories);
+        IconSources.CollectionChanged += IconSources_CollectionChanged;  // TODO: Can this be made async?
+        foreach (var src in _settingsService.Settings.IconSources)
+        {
+            IconSources.Add(src);
+        }
     }
 
-    public string ButtonText => "Load Icons";
+    public ObservableCollection<string> RecentDirectories { get; init; }
+    public ObservableCollection<string> IconSources { get; } = [];
+    public ObservableCollection<IconViewModel> Icons { get; } = [];
 
-    public ObservableCollection<IconViewModel> Icons { get; } = new();
+    [ObservableProperty]
+    private string _selectedIconSource;
 
-#pragma warning disable S1075 // URIs should not be hardcoded
-    public readonly string[] DefaultIconFiles = [
-        @"C:\Windows\System32\imageres.dll",
-        @"C:\Windows\System32\shell32.dll",
-        @"C:\Windows\System32\ddores.dll",
-        @"C:\Windows\System32\mmres.dll",
-        @"C:\Windows\System32\netshell.dll",
-        @"C:\Windows\System32\networkexplorer.dll",
-        @"C:\Windows\System32\setupapi.dll",
-        @"C:\Windows\System32\wmploc.dll",
-        @"C:\Windows\System32\wpdshext.dll",
-        @"C:\Windows\System32\dsuiext.dll",
-        @"C:\Windows\System32\comres.dll",
-    ];
-#pragma warning restore S1075 // URIs should not be hardcoded
-
-    public IAsyncRelayCommand LoadButtonCommand { get; init; }
-
-    public async Task LoadButtonClicked()
+    //public void IconSource_Removed(object sender, RoutedEventArgs e)
+    //[RelayCommand(CanExeute="CanExecute")]
+    public void IconSource_Removed()
     {
-        await foreach (var icon in _iconService.GetIconsAsync(DefaultIconFiles))
-        {
-            try
-            {
-                IconViewModel vm = new();
-                vm.Image = icon.ToAvaloniaBitmap();
-                Icons.Add(vm);
-            }
-            catch (ArgumentException ex) {
+    }
 
-            }
+    private async void IconSources_CollectionChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+    {
+        switch (e.Action)
+        {
+            case System.Collections.Specialized.NotifyCollectionChangedAction.Add:
+                // Our UI only allows adding to the end
+                foreach (var item in e.NewItems)
+                {
+                    var path = (string)item!;
+                    await foreach (var bitmap in _iconService.GetBitmapsAsync(path))
+                    {
+                        IconViewModel vm = new()
+                        {
+                            Path = path,
+                            Image = bitmap
+                        };
+                        // TODO: Dialog on exception?
+                        Icons.Add(vm);
+                    }
+                }
+                break;
+            case System.Collections.Specialized.NotifyCollectionChangedAction.Remove:
+                foreach (var item in e.OldItems)
+                {
+                    var path = (string)item!;
+                    Icons.RemoveFirstRangeWhere(i => i.Path == path);
+                }
+                break;
+            case System.Collections.Specialized.NotifyCollectionChangedAction.Replace:
+                throw new NotImplementedException();
+            case System.Collections.Specialized.NotifyCollectionChangedAction.Move:
+                // We don't bother to re-order already loaded icons - any reorder will apply upon next reload
+                break;
+            case System.Collections.Specialized.NotifyCollectionChangedAction.Reset:
+                Icons.Clear();
+                break;
         }
     }
 
     private readonly IIconService _iconService;
+    private readonly ISettingsService _settingsService;
 }

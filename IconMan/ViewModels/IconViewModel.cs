@@ -1,7 +1,5 @@
 ﻿using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
-using System.IO;
-using System.Linq;
 
 namespace IconMan.ViewModels;
 

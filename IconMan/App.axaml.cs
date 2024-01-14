@@ -27,9 +27,11 @@ public partial class App : Application
         // Dependency Injection
         Control = new ServiceCollection()
             .AddSingleton(LoggerFactory.Create(builder => builder.AddDebug()))
-            .AddSingleton<IIconService, Win32IconService>()
             .AddSingleton<IDirectoryIconService, Win32DirectoryIconService>()
+            .AddSingleton<IIconService, Win32IconService>()
+            .AddSingleton<ISettingsService, JsonSettingsService>()
             .BuildServiceProvider();
+        GetService<ISettingsService>().Load();
 
         // Line below is needed to remove Avalonia data validation.
         // Without this line you will get duplicate validations from both Avalonia and CT
@@ -37,6 +39,8 @@ public partial class App : Application
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
+            // ((IClassicDesktopStyleApplicationLifetime)ApplicationLifetime).Startup
+            ((IClassicDesktopStyleApplicationLifetime)ApplicationLifetime).ShutdownRequested += OnShutdown;
             desktop.MainWindow = new MainWindow
             {
                 DataContext = new MainViewModel()
@@ -51,5 +55,10 @@ public partial class App : Application
         }
 
         base.OnFrameworkInitializationCompleted();
+    }
+
+    private void OnShutdown(object? sender, ShutdownRequestedEventArgs e)
+    {
+        GetService<ISettingsService>().Save();
     }
 }

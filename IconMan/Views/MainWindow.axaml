@@ -6,6 +6,8 @@
         xmlns:views="clr-namespace:IconMan.Views"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
         x:Class="IconMan.Views.MainWindow"
+        Width="800"
+        Height="450"
         Icon="/Assets/avalonia-logo.ico"
         Title="IconMan"
         >
