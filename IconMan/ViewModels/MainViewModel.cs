@@ -35,10 +35,10 @@ public partial class MainViewModel : ViewModelBase
     [ObservableProperty]
     private string _selectedIconSource;
 
-    //public void IconSource_Removed(object sender, RoutedEventArgs e)
-    //[RelayCommand(CanExeute="CanExecute")]
-    public void IconSource_Removed()
+    [RelayCommand]
+    private void IconSource_Removed()
     {
+        // TODO: Get Index of Item?
     }
 
     private async void IconSources_CollectionChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)

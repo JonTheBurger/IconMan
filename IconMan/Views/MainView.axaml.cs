@@ -12,11 +12,6 @@ public partial class MainView : UserControl
         InitializeComponent();
     }
 
-    private void Ligma()
-    {
-
-    }
-
     private async void AddIconSourceButton_Clicked(object? sender, RoutedEventArgs e)
     {
         var top = TopLevel.GetTopLevel(this);

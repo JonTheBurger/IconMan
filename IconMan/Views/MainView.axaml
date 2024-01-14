@@ -7,7 +7,14 @@
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:Class="IconMan.Views.MainView"
              x:DataType="vm:MainViewModel">
-    <!--<TabControl HorizontalAlignment="Center">-->
+    <UserControl.DataContext>
+        <vm:MainViewModel></vm:MainViewModel>
+    </UserControl.DataContext>
+    <UserControl.Resources>
+        <ContextMenu x:Key="ItemContextMenu">
+            <MenuItem Header="Delete" Command="{Binding IconSource_RemovedCommand}"/>
+        </ContextMenu>
+    </UserControl.Resources>
     <TabControl>
         <TabItem Header="Icons">
             <Grid RowDefinitions="*" ColumnDefinitions="*,*">
@@ -32,23 +39,38 @@
                 <TextBlock Text="Icon Sources" Grid.Row="0" Grid.Column="0" HorizontalAlignment="Left" VerticalAlignment="Center"/>
                 <Button Content="Add" Click="AddIconSourceButton_Clicked" Width="64" HorizontalContentAlignment="Center" Grid.Row="0" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center"/>
                 <ListBox ItemsSource="{Binding IconSources}" Selection="{Binding SelectedIconSource}" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2">
-                    <ListBox.ItemContainerTheme>
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <ListBoxItem Content="{Binding}" ContextMenu="{StaticResource ItemContextMenu}"/>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                    <!--<ListBox.ItemContainerTheme>
                         <ControlTheme TargetType="ListBoxItem" BasedOn="{StaticResource {x:Type ListBoxItem}}">
                             <Setter Property="Padding" Value="8" />
                             <Setter Property="ContextMenu">
                                 <Setter.Value>
                                     <ContextMenu>
-                                        <MenuItem Header="Delete" Command="{Binding IconSource_Removed}"/>
+                                        <MenuItem Header="Remove" Command="{Binding IconSource_RemovedCommand}"/>
                                     </ContextMenu>
                                 </Setter.Value>
                             </Setter>
                         </ControlTheme>
-                    </ListBox.ItemContainerTheme>
+                    </ListBox.ItemContainerTheme>-->
                 </ListBox>
                 <TextBlock Text="Recent Items" Grid.Row="2" Grid.Column="0" HorizontalAlignment="Left" VerticalAlignment="Center"/>
                 <Button Content="Add" Width="64" HorizontalContentAlignment="Center" Grid.Row="2" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center"/>
-                <ListBox ItemsSource="{Binding RecentDirectories}" Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2"/>
+                <!--<ListBox ItemsSource="{Binding RecentDirectories}" Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2"/>-->
+<TextBox AcceptsReturn="True" TextWrapping="Wrap" Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2">
+  <TextBox.ContextMenu>
+    <ContextMenu>
+      <MenuItem Header="Copy"/>
+      <MenuItem Header="Paste" Command="{Binding IconSource_RemovedCommand}"/>
+    </ContextMenu>
+  </TextBox.ContextMenu>
+</TextBox>
             </Grid>
         </TabItem>
     </TabControl>
 </UserControl>
+                                        <!--<MenuItem Header="Delete" Command="{Binding DataContext.IconSource_RemovedCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"/>-->
+                                        <!--<MenuItem Header="Delete" Command="{Binding DataContext.IconSource_RemovedCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"/>-->
