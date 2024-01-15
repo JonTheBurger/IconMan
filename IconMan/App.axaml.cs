@@ -39,7 +39,6 @@ public partial class App : Application
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            // ((IClassicDesktopStyleApplicationLifetime)ApplicationLifetime).Startup
             ((IClassicDesktopStyleApplicationLifetime)ApplicationLifetime).ShutdownRequested += OnShutdown;
             desktop.MainWindow = new MainWindow
             {

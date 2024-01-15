@@ -5,6 +5,7 @@ using IconMan.Services;
 using IconMan.Util;
 using System;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.Threading.Tasks;
 
 namespace IconMan.ViewModels;
@@ -20,63 +21,69 @@ public partial class MainViewModel : ViewModelBase
         _iconService = iconService;
         _settingsService = settingsService;
 
-        RecentDirectories = new(_settingsService.Settings.RecentDirectories);
+        RecentDirectories = _settingsService.Settings.RecentDirectories;
+        IconSources = _settingsService.Settings.IconSources;
         IconSources.CollectionChanged += IconSources_CollectionChanged;  // TODO: Can this be made async?
-        foreach (var src in _settingsService.Settings.IconSources)
+        foreach (var source in IconSources)
         {
-            IconSources.Add(src);
+            LoadIconsAsync(source);
         }
     }
 
     public ObservableCollection<string> RecentDirectories { get; init; }
-    public ObservableCollection<string> IconSources { get; } = [];
+    public ObservableCollection<string> IconSources { get; init; }
     public ObservableCollection<IconViewModel> Icons { get; } = [];
 
     [ObservableProperty]
-    private string _selectedIconSource;
+    private int _selectedIconSourceIndex;
 
     [RelayCommand]
-    private void IconSource_Removed()
+    public void IconSource_Removed(int d)
     {
-        // TODO: Get Index of Item?
+        IconSources.RemoveAt(SelectedIconSourceIndex);
     }
 
-    private async void IconSources_CollectionChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+    private async void IconSources_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
         switch (e.Action)
         {
-            case System.Collections.Specialized.NotifyCollectionChangedAction.Add:
+            case NotifyCollectionChangedAction.Add:
                 // Our UI only allows adding to the end
                 foreach (var item in e.NewItems)
                 {
                     var path = (string)item!;
-                    await foreach (var bitmap in _iconService.GetBitmapsAsync(path))
-                    {
-                        IconViewModel vm = new()
-                        {
-                            Path = path,
-                            Image = bitmap
-                        };
-                        // TODO: Dialog on exception?
-                        Icons.Add(vm);
-                    }
+                    LoadIconsAsync((string)item!);
                 }
                 break;
-            case System.Collections.Specialized.NotifyCollectionChangedAction.Remove:
+            case NotifyCollectionChangedAction.Remove:
                 foreach (var item in e.OldItems)
                 {
                     var path = (string)item!;
                     Icons.RemoveFirstRangeWhere(i => i.Path == path);
                 }
                 break;
-            case System.Collections.Specialized.NotifyCollectionChangedAction.Replace:
+            case NotifyCollectionChangedAction.Replace:
                 throw new NotImplementedException();
-            case System.Collections.Specialized.NotifyCollectionChangedAction.Move:
+            case NotifyCollectionChangedAction.Move:
                 // We don't bother to re-order already loaded icons - any reorder will apply upon next reload
                 break;
-            case System.Collections.Specialized.NotifyCollectionChangedAction.Reset:
+            case NotifyCollectionChangedAction.Reset:
                 Icons.Clear();
                 break;
+        }
+    }
+
+    private async Task LoadIconsAsync(string path)
+    {
+        await foreach (var bitmap in _iconService.GetBitmapsAsync(path))
+        {
+            IconViewModel vm = new()
+            {
+                Path = path,
+                Image = bitmap
+            };
+            // TODO: Dialog on exception?
+            Icons.Add(vm);
         }
     }
 

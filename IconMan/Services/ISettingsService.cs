@@ -1,12 +1,13 @@
 ﻿using IconMan.Models;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 
 namespace IconMan.Services;
 
 public class Settings
 {
-    public List<string> RecentDirectories { get; set; } = [];
-    public List<string> IconSources { get; set; } = [
+    public ObservableCollection<string> RecentDirectories { get; set; } = [];
+    public ObservableCollection<string> IconSources { get; set; } = [
         @"C:\Windows\System32\imageres.dll",
         @"C:\Windows\System32\shell32.dll",
         @"C:\Windows\System32\ddores.dll",
@@ -19,7 +20,7 @@ public class Settings
         @"C:\Windows\System32\dsuiext.dll",
         @"C:\Windows\System32\comres.dll",
     ];
-    public List<IconSource> FavoriteIcons { get; set; } = [];
+    public ObservableCollection<IconSource> FavoriteIcons { get; set; } = [];
 }
 
 public interface ISettingsService

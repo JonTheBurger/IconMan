@@ -12,6 +12,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{12C4BFE2-F407-437B-BE92-624D2F0B5F6B}"
 	ProjectSection(SolutionItems) = preProject
 		README.md = README.md
+		Win32IconTest.cpp = Win32IconTest.cpp
 	EndProjectSection
 EndProject
 Global

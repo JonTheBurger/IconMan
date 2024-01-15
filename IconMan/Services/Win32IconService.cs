@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
@@ -29,19 +30,25 @@ public class Win32IconService : IIconService
 
     public Icon GetIcon(string file, int index)
     {
-        nint large;
-        nint small;
-
         if (!File.Exists(file)) { throw new ArgumentOutOfRangeException(nameof(file)); }
-        var result = ExtractIconExW(file, index, out large, out small, 1);
+        var result = ExtractIconExW(file, index, out IntPtr large, out IntPtr small, 1);
         if ((index < 0) || (result <= 0))
         {
-            _logger.LogError($"Failed ExtractIconExW with code '{result}' for '{file}'");
+            int code = Marshal.GetLastWin32Error();
+            string message = new Win32Exception(code).Message;
+            _logger.LogError($"Failed ExtractIconExW with '{result}' and code '{code}': '{message}' for '{file}'");
             throw new ArgumentOutOfRangeException(nameof(index));
         }
-        _logger.LogInformation($"ExtractIconExW '{file}' at '{index}'");
 
-        return Icon.FromHandle(large != 0 ? large : small);
+        bool useLarge = large != 0;
+        var unmanaged = Icon.FromHandle(useLarge ? large : small);
+
+        if ((useLarge) && (small > 0))
+        {
+            DestroyIcon(small);
+        }
+
+        return unmanaged;
     }
 
     public async IAsyncEnumerable<AvaloniaBitmap> GetBitmapsAsync(string file, [EnumeratorCancellation] CancellationToken token = default)
@@ -52,7 +59,13 @@ public class Win32IconService : IIconService
             int count = await Task.Run(() => GetIconCount(file));
             for (int i = 0; ((i < count) && (!token.IsCancellationRequested)); i++)
             {
-                yield return await Task.Run(() => GetIcon(file, i).ToAvaloniaBitmap());
+                yield return await Task.Run(() => {
+                    var icon = GetIcon(file, i);
+                    var bitmap = icon.ToAvaloniaBitmap();
+                    icon.Dispose();
+                    DestroyIcon(icon.Handle);
+                    return bitmap;
+                });
             }
         }
         finally
@@ -85,6 +98,10 @@ public class Win32IconService : IIconService
     // https://learn.microsoft.com/en-us/windows/win32/api/shellapi/nf-shellapi-extracticonexw
     [DllImport("shell32.dll", EntryPoint = "ExtractIconExW", CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true, CallingConvention = CallingConvention.StdCall)]
     private static extern int ExtractIconExW(string lpszFile, int nIconIndex, IntPtr phiconLarge, IntPtr phiconsmall, int nIcons);
+
+    // https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-destroyicon
+    [DllImport("user32.dll", EntryPoint = "DestroyIcon", CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true, CallingConvention = CallingConvention.StdCall)]
+    private static extern bool DestroyIcon(IntPtr hIcon);
 
     private readonly ILogger _logger;
     private readonly SemaphoreSlim _semaphore = new(1);
