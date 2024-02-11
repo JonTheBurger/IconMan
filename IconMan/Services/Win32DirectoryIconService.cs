@@ -36,7 +36,7 @@ public class Win32DirectoryIconService : IDirectoryIconService
         if (!File.Exists(iniPath)) { File.Create(iniPath); }
 
         string value = IconSourceToValue(icon);
-        bool ok = WritePrivateProfileStructW(SECTION, KEY, value, (uint)Encoding.Unicode.GetByteCount(value), iniPath);
+        bool ok = WritePrivateProfileStringW(SECTION, KEY, value, iniPath);
     }
 
     public void ResetCustomIcon(string directory)
@@ -45,7 +45,7 @@ public class Win32DirectoryIconService : IDirectoryIconService
         if (!Directory.Exists(directory)) { throw new IOException($"{directory} is not a valid directory"); }
         if (!File.Exists(iniPath)) { File.Create(iniPath); }
 
-        bool ok = WritePrivateProfileStructW(SECTION, KEY, null, 0, iniPath);
+        bool ok = WritePrivateProfileStringW(SECTION, KEY, null, iniPath);
     }
 
     public static readonly string INI_FILE = "desktop.ini";
@@ -89,7 +89,7 @@ public class Win32DirectoryIconService : IDirectoryIconService
     [DllImport("kernel32.dll", EntryPoint = "GetPrivateProfileStringW", CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true, CallingConvention = CallingConvention.StdCall)]
     private static extern int GetPrivateProfileStringW(string lpAppName, string lpKeyName, string lpDefault, byte[] lpReturnedString, int nSize, string lpFileName);
 
-    // https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-writeprivateprofilestructw
-    [DllImport("kernel32.dll", EntryPoint = "WritePrivateProfileStructW", CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true, CallingConvention = CallingConvention.StdCall)]
-    private static extern bool WritePrivateProfileStructW(string lpszSection, string lpszKey, string lpStruct, uint uSizeStruct, string szFile);
+    // https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-writeprivateprofilestringw
+    [DllImport("kernel32.dll", EntryPoint = "WritePrivateProfileStringW", CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true, CallingConvention = CallingConvention.StdCall)]
+    private static extern bool WritePrivateProfileStringW(string lpAppName, string? lpKeyName, string? lpString, string lpFileName);
 }

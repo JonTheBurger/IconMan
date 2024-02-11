@@ -13,8 +13,12 @@
     </UserControl.DataContext>
     <TabControl>
         <TabItem Header="Icons">
-            <Grid RowDefinitions="*" ColumnDefinitions="*,*">
-                <ScrollViewer Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" VerticalScrollBarVisibility="Auto">
+            <Grid RowDefinitions="*,*,*,*" ColumnDefinitions="*,2*">
+                <Label Content="{Binding CurrentDirPath, TargetNullValue='Open a directory to change its icon'}" FontStyle="Italic" FontWeight="UltraLight" HorizontalAlignment="Center" Padding="15"/>
+                <Button Content="Open" Click="OpenDirectoryButton_Clicked" Grid.Row="0" Grid.Column="0" HorizontalAlignment="Center"/>
+                <Image Source="{Binding CurrentDirImage}" Grid.Row="1" Grid.Column="0" Stretch="Uniform"/>
+                <Button Content="Overwrite" Command="{Binding OverwriteDirectoryIconCommand}" Grid.Row="3" Grid.Column="0" HorizontalAlignment="Center"/>
+                <ScrollViewer Grid.Row="0" Grid.RowSpan="99" Grid.Column="1" VerticalScrollBarVisibility="Auto">
                     <ItemsControl ItemsSource="{Binding Icons}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>

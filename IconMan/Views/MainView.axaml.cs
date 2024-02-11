@@ -12,6 +12,26 @@ public partial class MainView : UserControl
         InitializeComponent();
     }
 
+    private async void OpenDirectoryButton_Clicked(object? sender, RoutedEventArgs e)
+    {
+        var top = TopLevel.GetTopLevel(this);
+        var selection = await top.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
+        {
+            Title = "Open directory to customize its icon",
+            AllowMultiple = false,
+        });
+        var vm = (MainViewModel)DataContext!;
+        if (selection.Count > 0)
+        {
+            var dir = selection[0];
+            string? path = dir.TryGetLocalPath();
+            if (path != null)
+            {
+                vm.CurrentDirPath = path;
+            }
+        }
+    }
+
     private async void AddIconSourceButton_Clicked(object? sender, RoutedEventArgs e)
     {
         var top = TopLevel.GetTopLevel(this);
@@ -22,7 +42,7 @@ public partial class MainView : UserControl
             FileTypeFilter = [
                 new FilePickerFileType("Windows Icons")
                 {
-                    Patterns = new[] { "*.dll", "*.ico" }
+                    Patterns = new[] { "*.dll", "*.ico", "*.exe" }
                 }
             ]
         });
