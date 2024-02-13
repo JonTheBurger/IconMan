@@ -7,6 +7,7 @@ using IconMan.Util;
 using System;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using System.ComponentModel;
 using System.Threading.Tasks;
 
 namespace IconMan.ViewModels;
@@ -37,6 +38,9 @@ public partial class MainViewModel : ViewModelBase
     public ObservableCollection<IconViewModel> Icons { get; } = [];
 
     [ObservableProperty]
+    private int _selectedIconIndex;
+
+    [ObservableProperty]
     private int _selectedIconSourceIndex;
 
     [ObservableProperty]
@@ -50,7 +54,7 @@ public partial class MainViewModel : ViewModelBase
             if ((CurrentDirPath != null) && (_directoryIconService.HasCustomIcon(CurrentDirPath)))
             {
                 var iconSource = _directoryIconService.GetCustomIcon(CurrentDirPath);
-                return _iconService.TryGetBitmap(iconSource.Path, iconSource.Index);
+                return _iconService.TryGetBitmap(iconSource);
             }
             return null;
         }
@@ -60,11 +64,11 @@ public partial class MainViewModel : ViewModelBase
     [RelayCommand]
     public void OverwriteDirectoryIcon()
     {
-        var icon = Icons[SelectedIconSourceIndex];
+        var icon = Icons[SelectedIconIndex];
         var source = new IconSource { Path = icon.Path, Index = icon.Index };
         _directoryIconService.SetCustomIcon(CurrentDirPath, source);
         // TODO: sloppy
-        OnCurrentDirPathChanged(CurrentDirPath);
+        OnPropertyChanged(new PropertyChangedEventArgs(nameof(CurrentDirImage)));
     }
 
 
@@ -106,12 +110,14 @@ public partial class MainViewModel : ViewModelBase
 
     private async Task LoadIconsAsync(string path)
     {
-        await foreach (var bitmap in _iconService.GetBitmapsAsync(path))
+        // TODO FIXME WARNING ERROR: The index isn't actually set lol
+        await foreach (var loadedIcon in _iconService.GetIconsAsync(path))
         {
             IconViewModel vm = new()
             {
-                Path = path,
-                Image = bitmap
+                Path = loadedIcon.Source.Path,
+                Index = loadedIcon.Source.Index,
+                Image = loadedIcon.Image,
             };
             // TODO: Dialog on exception?
             Icons.Add(vm);

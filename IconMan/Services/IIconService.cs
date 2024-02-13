@@ -1,4 +1,5 @@
 ﻿using Avalonia.Media.Imaging;
+using IconMan.Models;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -9,13 +10,13 @@ public interface IIconService
 {
     int GetBitmapCount(string file);
 
-    Bitmap GetBitmap(string file, int index);
+    Bitmap GetBitmap(IconSource source);
 
-    Bitmap? TryGetBitmap(string file, int index)
+    Bitmap? TryGetBitmap(IconSource source)
     {
         try
         {
-            return GetBitmap(file, index);
+            return GetBitmap(source);
         }
         catch
         {
@@ -23,15 +24,15 @@ public interface IIconService
         }
     }
 
-    IAsyncEnumerable<Bitmap> GetBitmapsAsync(string file, CancellationToken token = default);
+    IAsyncEnumerable<LoadedIcon> GetIconsAsync(string file, CancellationToken token = default);
 
-    async IAsyncEnumerable<Bitmap> GetBitmapsAsync(IEnumerable<string> files, [EnumeratorCancellation] CancellationToken token = default)
+    async IAsyncEnumerable<LoadedIcon> GetIconsAsync(IEnumerable<string> files, [EnumeratorCancellation] CancellationToken token = default)
     {
         foreach (var file in files)
         {
-            await foreach(var bitmap in GetBitmapsAsync(file, token))
+            await foreach(var icon in GetIconsAsync(file, token))
             {
-                yield return bitmap;
+                yield return icon;
             }
         }
     }

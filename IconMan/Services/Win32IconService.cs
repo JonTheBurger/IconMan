@@ -1,4 +1,5 @@
 ﻿using Avalonia.Media.Imaging;
+using IconMan.Models;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -25,16 +26,16 @@ public class Win32IconService : IIconService
         return ExtractIconExW(file, -1, 0, 0, 0);
     }
 
-    public Bitmap GetBitmap(string file, int index)
+    public Bitmap GetBitmap(IconSource source)
     {
-        if (!File.Exists(file)) { throw new ArgumentException("File does not exist", nameof(file)); }
-        if (index < 0) { throw new ArgumentOutOfRangeException(nameof(index), index, "Positive integer required"); }
+        if (!File.Exists(source.Path)) { throw new ArgumentException("File does not exist", nameof(source)); }
+        if (source.Index < 0) { throw new ArgumentOutOfRangeException(nameof(source), source.Index, "Positive integer required"); }
 
-        var result = ExtractIconExW(file, index, out IntPtr large, out IntPtr small, 1);
+        var result = ExtractIconExW(source.Path, source.Index, out IntPtr large, out IntPtr small, 1);
         if (result <= 0)
         {
             var win32 = new Win32Exception(Marshal.GetLastWin32Error());
-            _logger.LogError("Failed ExtractIconExW with '{result}' and code '{nativeErrorr}': '{errorMessage}' for '{file}'", result, win32.NativeErrorCode, win32.Message, file);
+            _logger.LogError("Failed ExtractIconExW with '{result}' and code '{nativeErrorr}': '{errorMessage}' for '{file}'", result, win32.NativeErrorCode, win32.Message, source.Path);
             throw win32;
         }
 
@@ -75,12 +76,16 @@ public class Win32IconService : IIconService
         return converted;
     }
 
-    public async IAsyncEnumerable<Bitmap> GetBitmapsAsync(string file, [EnumeratorCancellation] CancellationToken token = default)
+    public async IAsyncEnumerable<LoadedIcon> GetIconsAsync(string file, [EnumeratorCancellation] CancellationToken token = default)
     {
         int count = await Task.Run(() => GetBitmapCount(file));
         for (int i = 0; ((i < count) && (!token.IsCancellationRequested)); i++)
         {
-            yield return await Task.Run(() => GetBitmap(file, i));
+            IconSource source = new(Path: file, Index: i);
+            yield return await Task.Run(() =>
+            {
+                return new LoadedIcon(Source: source, Image: GetBitmap(source));
+            });
         }
     }
 

@@ -1,5 +1,4 @@
-﻿using System.Drawing;
-
+﻿using Avalonia.Media.Imaging;
 namespace IconMan.Models;
 
 public record IconSource(string Path = "", int Index = 0);

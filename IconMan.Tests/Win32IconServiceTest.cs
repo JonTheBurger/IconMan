@@ -31,10 +31,10 @@ public class Win32IconServiceTest
     {
         for (int stress = 0; stress < 100; ++stress)
         {
-            await foreach(var bitmap in _service.GetBitmapsAsync(DDORES_DLL))
+            await foreach(var bitmap in _service.GetIconsAsync(DDORES_DLL))
             {
-                Assert.True(bitmap.Size.Width > 0);
-                Assert.True(bitmap.Size.Height > 0);
+                Assert.True(bitmap.Image.Size.Width > 0);
+                Assert.True(bitmap.Image.Size.Height > 0);
             }
         }
     }
