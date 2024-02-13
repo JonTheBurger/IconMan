@@ -1,4 +1,4 @@
-// Requires >= C++17
+// File for testing out Win32 API function calls; requires >= C++17
 #include <iostream>
 #include <iomanip>
 #include <windows.h>

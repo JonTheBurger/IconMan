@@ -1,19 +1,24 @@
-﻿using Avalonia.Media.Imaging;
-using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using IconMan.Models;
 
 namespace IconMan.ViewModels;
 
-public partial class IconViewModel : ViewModelBase
+/// <summary>
+/// Display glue for an Icon loaded from a particular location. Many of these
+/// will be used within a ListView.
+/// </summary>
+/// <param name="icon">Icon loaded from disk.</param>
+public partial class IconViewModel(LoadedIcon icon) : ViewModelBase
 {
+    /// <summary>
+    /// Corresponds to the icon and tooltip on the GUI.
+    /// </summary>
     [ObservableProperty]
-    private Bitmap? _image;
+    private LoadedIcon _icon = icon;
 
-    [ObservableProperty]
-    private string _path = "";
-
-    [ObservableProperty]
-    private int _index = 0;
-
+    /// <summary>
+    /// Corresponds to a favorite star on the GUI.
+    /// </summary>
     [ObservableProperty]
     private bool _isFavorite = false;
 }

@@ -1,7 +1,6 @@
 ﻿using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using IconMan.Models;
 using IconMan.Services;
 using IconMan.Util;
 using System;
@@ -12,41 +11,81 @@ using System.Threading.Tasks;
 
 namespace IconMan.ViewModels;
 
+/// <summary>
+/// Display glue for the top-level display control.
+/// </summary>
 public partial class MainViewModel : ViewModelBase
 {
+    private readonly IIconService _iconService;
+    private readonly ISettingsService _settingsService;
+    private readonly IDirectoryIconService _directoryIconService;
+
+    /// <summary>
+    /// Load services from IoC container.
+    /// </summary>
     public MainViewModel() : this(App.GetService<IIconService>(), App.GetService<ISettingsService>(), App.GetService<IDirectoryIconService>())
     {
     }
 
+    /// <summary>
+    /// Manually specify services for testing.
+    /// </summary>
+    /// <param name="iconService">For example, <see cref="Win32IconService"/></param>
+    /// <param name="settingsService">For example, <see cref="JsonSettingsService"/></param>
+    /// <param name="directoryIconService">For example, <see cref="Win32DirectoryIconService"/></param>
     public MainViewModel(IIconService iconService, ISettingsService settingsService, IDirectoryIconService directoryIconService)
     {
         _iconService = iconService;
         _settingsService = settingsService;
         _directoryIconService = directoryIconService;
 
-        RecentDirectories = _settingsService.Settings.RecentDirectories;
         IconSources = _settingsService.Settings.IconSources;
-        IconSources.CollectionChanged += IconSources_CollectionChanged;  // TODO: Can this be made async?
+        // TODO: Can this be made async?
+        IconSources.CollectionChanged += OnIconSourcesChanged;
         foreach (var source in IconSources)
         {
             LoadIconsAsync(source);
         }
     }
 
-    public ObservableCollection<string> RecentDirectories { get; init; }
+    /// <summary>
+    /// List of <c>.dll/.ico</c> files used for customizing directories.
+    /// Persists across sessions. Adding/Removing an IconSource will
+    /// automatically Load/Unload its icons.
+    /// </summary>
     public ObservableCollection<string> IconSources { get; init; }
+
+    /// <summary>
+    /// Selected <see cref="IconSources"/>.
+    /// </summary>
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(RemoveIconSourceCommand))]
+    private int _selectedIconSourceIndex = -1;
+
+    /// <summary>
+    /// Icons loaded from <see cref="IconSources"./>
+    /// </summary>
     public ObservableCollection<IconViewModel> Icons { get; } = [];
 
+    /// <summary>
+    /// Selected <see cref="Icons"/>.
+    /// </summary>
     [ObservableProperty]
-    private int _selectedIconIndex;
+    [NotifyCanExecuteChangedFor(nameof(OverwriteDirectoryIconCommand))]
+    private int _selectedIconIndex = -1;
 
+    /// <summary>
+    /// The directory whose icon is being customized.
+    /// </summary>
     [ObservableProperty]
-    private int _selectedIconSourceIndex;
-
-    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(OverwriteDirectoryIconCommand))]
     [NotifyPropertyChangedFor(nameof(CurrentDirImage))]
     private string? _currentDirPath = null;
 
+    /// <summary>
+    /// Custom icon currently set for the given directory. This is null if
+    /// there is no custom icon.
+    /// </summary>
     public Bitmap? CurrentDirImage
     {
         get
@@ -60,41 +99,67 @@ public partial class MainViewModel : ViewModelBase
         }
     }
 
-    //[RelayCommand(CanExecute = Selection)]
-    [RelayCommand]
+    /// <summary>
+    /// Set the custom icon on a directory using the currently selected IconSource.
+    /// </summary>
+    [RelayCommand(CanExecute = nameof(CanOverwriteDirectoryIcon))]
     public void OverwriteDirectoryIcon()
     {
-        var icon = Icons[SelectedIconIndex];
-        var source = new IconSource { Path = icon.Path, Index = icon.Index };
-        _directoryIconService.SetCustomIcon(CurrentDirPath, source);
-        // TODO: sloppy
+        var icon = Icons[SelectedIconIndex].Icon;
+        _directoryIconService.SetCustomIcon(CurrentDirPath!, icon.Source);
+        // TODO: sloppy - is there a better way to trigger this?
         OnPropertyChanged(new PropertyChangedEventArgs(nameof(CurrentDirImage)));
     }
 
+    /// <summary>
+    /// Checks to see if Command for <see cref="OverwriteDirectoryIcon"/> can execute.
+    /// </summary>
+    private bool CanOverwriteDirectoryIcon()
+    {
+        return (CurrentDirPath != null) && (SelectedIconIndex > -1);
+    }
 
-    [RelayCommand]
-    public void IconSource_Removed(int d)
+    /// <summary>
+    /// Removes an Icon source <c>.dll/.ico</c> and its loaded icons.
+    /// </summary>
+    /// <param name="index">index of selected IconSource</param>
+    [RelayCommand(CanExecute = nameof(CanRemoveIconSource))]
+    public void RemoveIconSource(int index)
     {
         IconSources.RemoveAt(SelectedIconSourceIndex);
     }
 
-    private async void IconSources_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    /// <summary>
+    /// Checks to see if Command for <see cref="RemoveIconSource"/> can execute.
+    /// </summary>
+    private bool CanRemoveIconSource()
+    {
+        return SelectedIconSourceIndex > -1;
+    }
+
+    /// <summary>
+    /// Loads/Unloads icons when an Icon source <c>.dll/.ico</c> has been added or removed.
+    /// </summary>
+    /// <param name="sender">Event originator; unused.</param>
+    /// <param name="e">How the collection has been changed.</param>
+    /// <exception cref="NotImplementedException">We don't support Replace.</exception>
+    private async void OnIconSourcesChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
         switch (e.Action)
         {
             case NotifyCollectionChangedAction.Add:
                 // Our UI only allows adding to the end
-                foreach (var item in e.NewItems)
+                foreach (var item in (e.NewItems ?? Array.Empty<string>()))
                 {
                     var path = (string)item!;
-                    LoadIconsAsync((string)item!);
+                    await LoadIconsAsync((string)item!);
                 }
                 break;
             case NotifyCollectionChangedAction.Remove:
-                foreach (var item in e.OldItems)
+                foreach (var item in (e.OldItems ?? Array.Empty<string>()))
                 {
                     var path = (string)item!;
-                    Icons.RemoveFirstRangeWhere(i => i.Path == path);
+                    Icons.RemoveFirstRangeWhere(i => i.Icon.Source.Path == path);
                 }
                 break;
             case NotifyCollectionChangedAction.Replace:
@@ -108,28 +173,16 @@ public partial class MainViewModel : ViewModelBase
         }
     }
 
+    /// <summary>
+    /// Loads icons from a path and adds the resulting ViewModel to <see cref="Icons"/>.
+    /// </summary>
+    /// <param name="path"></param>
+    /// <returns>Task indicating completion.</returns>
     private async Task LoadIconsAsync(string path)
     {
-        // TODO FIXME WARNING ERROR: The index isn't actually set lol
-        await foreach (var loadedIcon in _iconService.GetIconsAsync(path))
+        await foreach (var icon in _iconService.GetIconsAsync(path))
         {
-            IconViewModel vm = new()
-            {
-                Path = loadedIcon.Source.Path,
-                Index = loadedIcon.Source.Index,
-                Image = loadedIcon.Image,
-            };
-            // TODO: Dialog on exception?
-            Icons.Add(vm);
+            Icons.Add(new(icon));
         }
     }
-
-    private async Task LoadCurrentDirIcon(string directory)
-    {
-
-    }
-
-    private readonly IIconService _iconService;
-    private readonly ISettingsService _settingsService;
-    private readonly IDirectoryIconService _directoryIconService;
 }

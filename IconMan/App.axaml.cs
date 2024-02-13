@@ -24,7 +24,7 @@ public partial class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {
-        // Dependency Injection
+        // Dependency Injection - Register with the IoC here!
         Control = new ServiceCollection()
             .AddSingleton(LoggerFactory.Create(builder => builder.AddDebug()))
             .AddSingleton<IDirectoryIconService, Win32DirectoryIconService>()
@@ -39,6 +39,7 @@ public partial class App : Application
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
+            // Save settings upon shutdown
             ((IClassicDesktopStyleApplicationLifetime)ApplicationLifetime).ShutdownRequested += OnShutdown;
             desktop.MainWindow = new MainWindow
             {

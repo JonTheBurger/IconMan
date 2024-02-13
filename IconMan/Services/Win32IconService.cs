@@ -13,19 +13,18 @@ using System.Threading.Tasks;
 
 namespace IconMan.Services;
 
-public class Win32IconService : IIconService
+public class Win32IconService(ILoggerFactory loggerFactory) : IIconService
 {
-    public Win32IconService(ILoggerFactory loggerFactory)
-    {
-        _logger = loggerFactory.CreateLogger<Win32IconService>();
-    }
+    private readonly ILogger _logger = loggerFactory.CreateLogger<Win32IconService>();
 
+    /// <inheritdoc/>
     public int GetBitmapCount(string file)
     {
         if (!File.Exists(file)) { throw new ArgumentOutOfRangeException(nameof(file)); }
         return ExtractIconExW(file, -1, 0, 0, 0);
     }
 
+    /// <inheritdoc/>
     public Bitmap GetBitmap(IconSource source)
     {
         if (!File.Exists(source.Path)) { throw new ArgumentException("File does not exist", nameof(source)); }
@@ -39,6 +38,7 @@ public class Win32IconService : IIconService
             throw win32;
         }
 
+        // A dll may contain both a large and small version of the same icon - prefer the large version.
         System.Drawing.Icon unmanaged;
         if (large != 0)
         {
@@ -56,8 +56,17 @@ public class Win32IconService : IIconService
         return ToAvaloniaBitmap(unmanaged);
     }
 
+    /// <summary>
+    /// Disposes of the provided icon and converts it into an Avalonia bitmap.
+    /// <see cref="System.Drawing.Icon.FromHandle(nint)"/> does not correctly
+    /// dispose of itself, so we dispose of it ourselves immediately after
+    /// converting.
+    /// </summary>
+    /// <param name="icon">Icon to convert and destroy. <b>DO NOT USE AFTER PASSING TO THIS FUNCTION</b>.</param>
+    /// <returns>Avalonia bitmap.</returns>
     private static Bitmap ToAvaloniaBitmap(System.Drawing.Icon icon)
     {
+        // https://github.com/AvaloniaUI/Avalonia/discussions/5908
         var bitmap = icon.ToBitmap();
         var region = new System.Drawing.Rectangle(0, 0, bitmap.Width, bitmap.Height);
         var data = bitmap.LockBits(region, ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
@@ -76,30 +85,38 @@ public class Win32IconService : IIconService
         return converted;
     }
 
+    /// <inheritdoc/>
     public async IAsyncEnumerable<LoadedIcon> GetIconsAsync(string file, [EnumeratorCancellation] CancellationToken token = default)
     {
         int count = await Task.Run(() => GetBitmapCount(file));
         for (int i = 0; ((i < count) && (!token.IsCancellationRequested)); i++)
         {
-            IconSource source = new(Path: file, Index: i);
+            IconSource source = new() { Path = file, Index = i };
             yield return await Task.Run(() =>
             {
-                return new LoadedIcon(Source: source, Image: GetBitmap(source));
+                return new LoadedIcon { Source = source, Image = GetBitmap(source) };
             });
         }
     }
 
-    // https://learn.microsoft.com/en-us/windows/win32/api/shellapi/nf-shellapi-extracticonexw
+    // Disable because we don't want to enable unsafe code.
+#pragma warning disable SYSLIB1054 // Use 'LibraryImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
+    /// <summary>
+    /// <a href="https://learn.microsoft.com/en-us/windows/win32/api/shellapi/nf-shellapi-extracticonexw"/>
+    /// </summary>
     [DllImport("shell32.dll", EntryPoint = "ExtractIconExW", CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true, CallingConvention = CallingConvention.StdCall)]
     private static extern int ExtractIconExW(string lpszFile, int nIconIndex, out IntPtr phiconLarge, out IntPtr phiconsmall, int nIcons);
 
-    // https://learn.microsoft.com/en-us/windows/win32/api/shellapi/nf-shellapi-extracticonexw
+    /// <summary>
+    /// <a href="https://learn.microsoft.com/en-us/windows/win32/api/shellapi/nf-shellapi-extracticonexw"/>
+    /// </summary>
     [DllImport("shell32.dll", EntryPoint = "ExtractIconExW", CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true, CallingConvention = CallingConvention.StdCall)]
     private static extern int ExtractIconExW(string lpszFile, int nIconIndex, IntPtr phiconLarge, IntPtr phiconsmall, int nIcons);
 
-    // https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-destroyicon
+    /// <summary>
+    /// <a href="https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-destroyicon"/>
+    /// </summary>
     [DllImport("user32.dll", EntryPoint = "DestroyIcon", CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true, CallingConvention = CallingConvention.StdCall)]
     private static extern bool DestroyIcon(IntPtr hIcon);
-
-    private readonly ILogger _logger;
+#pragma warning restore SYSLIB1054 // Use 'LibraryImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
 }
