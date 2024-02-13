@@ -103,9 +103,9 @@ register it as a favorite.
 
 **Fancy TODOs:**
 
-- desktop.ini needs to be set as a system file
+- desktop.ini needs to be set as a system file (not working on new dirs)
 - Favorite icons
-- Disallow duplicate IconSources
+--------------------------------------------------------------------------------
 - dotnet format + xaml + editorconfig
 - AOT standalone binary
 - Github actions

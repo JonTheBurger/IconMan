@@ -40,7 +40,6 @@ public partial class MainViewModel : ViewModelBase
         _directoryIconService = directoryIconService;
 
         IconSources = _settingsService.Settings.IconSources;
-        // TODO: Can this be made async?
         IconSources.CollectionChanged += OnIconSourcesChanged;
         foreach (var source in IconSources)
         {
@@ -107,7 +106,6 @@ public partial class MainViewModel : ViewModelBase
     {
         var icon = Icons[SelectedIconIndex].Icon;
         _directoryIconService.SetCustomIcon(CurrentDirPath!, icon.Source);
-        // TODO: sloppy - is there a better way to trigger this?
         OnPropertyChanged(new PropertyChangedEventArgs(nameof(CurrentDirImage)));
     }
 
@@ -135,6 +133,21 @@ public partial class MainViewModel : ViewModelBase
     private bool CanRemoveIconSource()
     {
         return SelectedIconSourceIndex > -1;
+    }
+
+    /// <summary>
+    /// Adds a new <c>.dll/.ico</c> file where icons shall be loaded from.
+    /// </summary>
+    /// <param name="path">File to add to icon load sources.</param>
+    /// <returns>true if the source could be added</returns>
+    public bool AddIconSource(string path)
+    {
+        if (IconSources.Contains(path))
+        {
+            return false;
+        }
+        IconSources.Add(path);
+        return true;
     }
 
     /// <summary>

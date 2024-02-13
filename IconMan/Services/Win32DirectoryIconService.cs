@@ -40,7 +40,15 @@ public class Win32DirectoryIconService : IDirectoryIconService
         if (!File.Exists(iniPath)) { File.Create(iniPath); }
 
         string value = icon.ToString();
-        WritePrivateProfileStringW(SECTION, KEY, value, iniPath);
+        try
+        {
+            ProtectDesktopIni(iniPath, false);
+            WritePrivateProfileStringW(SECTION, KEY, value, iniPath);
+        }
+        finally
+        {
+            ProtectDesktopIni(iniPath);
+        }
     }
 
     /// <inheritdoc/>
@@ -82,17 +90,15 @@ public class Win32DirectoryIconService : IDirectoryIconService
     }
 
     /// <summary>
-    /// Un/Protects <c>desktop.ini</c>, which is a system file.
+    /// Un/Protects a system file such as <c>desktop.ini</c>.
     /// </summary>
-    /// <param name="directory">Directory to un/protect; must exist.</param>
+    /// <param name="iniPath">File to un/protect; must exist.</param>
     /// <param name="protect">True to protect the <c>desktop.ini</c>, false to un-protect.</param>
-    public static void ProtectDesktopIni(string directory, bool protect = true)
+    public static void ProtectDesktopIni(string iniPath, bool protect = true)
     {
-        var iniPath = Path.Combine(directory, "desktop.ini");
         if (protect)
         {
             File.SetAttributes(iniPath, File.GetAttributes(iniPath) | FileAttributes.Hidden | FileAttributes.System);
-            File.SetAttributes(directory, File.GetAttributes(directory) | FileAttributes.System);
         }
         else
         {
